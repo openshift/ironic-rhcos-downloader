@@ -56,5 +56,3 @@ if [ -s "${RHCOS_IMAGE_FILENAME_OPENSTACK}" ] ; then
 else
     rm -rf $TMPDIR
 fi
-
-sleep infinity
