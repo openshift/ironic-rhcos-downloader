@@ -21,7 +21,7 @@ if [ -e $FFILENAME.headers ] ; then
     FILECACHED=$(sed -n -e 's/.*filename=\([^\r]\+\).*/\1/p' "$FFILENAME.headers")
     # We already have the required file
     if [ "$FILECACHED" == "${RHCOS_IMAGE_FILENAME_OPENSTACK}" ] ; then
-        sleep infinity
+        exit 0
     fi
 fi
 
