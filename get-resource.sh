@@ -2,7 +2,7 @@
 #CACHEURL=http://172.22.0.1/images
 
 # Which image should we use
-export RHCOS_IMAGE_URL=${1:-}
+export RHCOS_IMAGE_URL=${1:-$RHCOS_IMAGE_URL}
 if [ -z "$RHCOS_IMAGE_URL" ] ; then
     echo "No image URL provided"
     exit 1
