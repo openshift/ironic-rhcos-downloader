@@ -25,7 +25,7 @@ fi
 RHCOS_IMAGE_FILENAME_COMPRESSED=${RHCOS_IMAGE_FILENAME_OPENSTACK/%openstack.qcow2/compressed.qcow2}
 FFILENAME="rhcos-ootpa-latest.qcow2"
 
-mkdir -p /shared/html/images
+mkdir -p /shared/html/images /shared/tmp
 cd /shared/html/images
 
 if [ -e $FFILENAME.headers ] ; then
@@ -36,7 +36,7 @@ if [ -e $FFILENAME.headers ] ; then
     fi
 fi
 
-TMPDIR=$(mktemp -d)
+TMPDIR=$(mktemp -d -p /shared/tmp)
 cd $TMPDIR
 
 # If we have a CACHEURL, download the headers file for the image its using
