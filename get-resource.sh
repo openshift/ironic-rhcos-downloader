@@ -22,7 +22,7 @@ else
     RHCOS_IMAGE_FILENAME_OPENSTACK="$(curl ${RHCOS_IMAGE_URL}/meta.json | jq -r '.images.openstack.path')"
     IMAGE_URL=${RHCOS_IMAGE_URL}
 fi
-RHCOS_IMAGE_FILENAME_COMPRESSED=${RHCOS_IMAGE_FILENAME_OPENSTACK/%openstack.qcow2/compressed.qcow2}
+RHCOS_IMAGE_FILENAME_COMPRESSED=${RHCOS_IMAGE_FILENAME_OPENSTACK/-openstack/-compressed}
 FFILENAME="rhcos-ootpa-latest.qcow2"
 
 mkdir -p /shared/html/images /shared/tmp
