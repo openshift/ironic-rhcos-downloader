@@ -19,7 +19,7 @@ if [[ $RHCOS_IMAGE_URL = *.qcow2 ]]; then
     RHCOS_IMAGE_FILENAME_OPENSTACK=$(basename $RHCOS_IMAGE_URL)
     IMAGE_URL=$(dirname $RHCOS_IMAGE_URL)
 else
-    RHCOS_IMAGE_FILENAME_OPENSTACK="$(curl ${RHCOS_IMAGE_URL}/meta.json | jq -r '.images.openstack.path')"
+    RHCOS_IMAGE_FILENAME_OPENSTACK="$(curl -g ${RHCOS_IMAGE_URL}/meta.json | jq -r '.images.openstack.path')"
     IMAGE_URL=${RHCOS_IMAGE_URL}
 fi
 RHCOS_IMAGE_FILENAME_COMPRESSED=${RHCOS_IMAGE_FILENAME_OPENSTACK/-openstack/-compressed}
@@ -41,18 +41,18 @@ cd $TMPDIR
 
 # If we have a CACHEURL, download the headers file for the image its using
 # if it matches the filename we want then we are going to use it
-if [ -n "$CACHEURL" ] && curl --fail -O "$CACHEURL/$FFILENAME.headers" ; then
+if [ -n "$CACHEURL" ] && curl -g --fail -O "$CACHEURL/$FFILENAME.headers" ; then
     FILECACHED=$(sed -n -e 's/.*filename=\([^\r]\+\).*/\1/p' "$FFILENAME.headers")
 fi
 
 # We have a File in the cache that matches the one we want, use it
 if [ "$FILECACHED" == "${RHCOS_IMAGE_FILENAME_OPENSTACK}" ] ; then
     mv $FFILENAME.headers "${RHCOS_IMAGE_FILENAME_OPENSTACK}.headers"
-    curl -O "$CACHEURL/$RHCOS_IMAGE_FILENAME_OPENSTACK/$RHCOS_IMAGE_FILENAME_COMPRESSED"
-    curl -O "$CACHEURL/$RHCOS_IMAGE_FILENAME_OPENSTACK/$RHCOS_IMAGE_FILENAME_OPENSTACK"
-    curl -O "$CACHEURL/$RHCOS_IMAGE_FILENAME_OPENSTACK/$RHCOS_IMAGE_FILENAME_COMPRESSED.md5sum"
+    curl -g -O "$CACHEURL/$RHCOS_IMAGE_FILENAME_OPENSTACK/$RHCOS_IMAGE_FILENAME_COMPRESSED"
+    curl -g -O "$CACHEURL/$RHCOS_IMAGE_FILENAME_OPENSTACK/$RHCOS_IMAGE_FILENAME_OPENSTACK"
+    curl -g -O "$CACHEURL/$RHCOS_IMAGE_FILENAME_OPENSTACK/$RHCOS_IMAGE_FILENAME_COMPRESSED.md5sum"
 else
-    curl --insecure --compressed -L --dump-header "${RHCOS_IMAGE_FILENAME_OPENSTACK}.headers" -o "${RHCOS_IMAGE_FILENAME_OPENSTACK}" "${IMAGE_URL}/${RHCOS_IMAGE_FILENAME_OPENSTACK}"
+    curl -g --insecure --compressed -L --dump-header "${RHCOS_IMAGE_FILENAME_OPENSTACK}.headers" -o "${RHCOS_IMAGE_FILENAME_OPENSTACK}" "${IMAGE_URL}/${RHCOS_IMAGE_FILENAME_OPENSTACK}"
     qemu-img convert -O qcow2 -c "$RHCOS_IMAGE_FILENAME_OPENSTACK" "$RHCOS_IMAGE_FILENAME_COMPRESSED"
     md5sum "$RHCOS_IMAGE_FILENAME_COMPRESSED" | cut -f 1 -d " " > "$RHCOS_IMAGE_FILENAME_COMPRESSED.md5sum"
 fi
