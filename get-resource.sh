@@ -9,14 +9,16 @@ if [ -z "$RHCOS_IMAGE_URL" ] ; then
 fi
 
 # When provided by openshift-installer the URL is like
-# "https://releases-art-rhcos.svc.ci.openshift.org/art/storage/releases/rhcos-4.2/420.8.20190708.2/rhcos-420.8.20190708.2-openstack.qcow2"
+# "https://releases-art-rhcos.svc.ci.openshift.org/art/storage/releases/rhcos-4.2/420.8.20190708.2/rhcos-420.8.20190708.2-openstack.qcow2?sha256=xxx"
 # In this case we use the URL as-is, otherwise for backwards compatibility
 # we figure it out from meta.json (when only the baseURI is provided)
 # The latter will be removed when 
 # https://github.com/openshift/installer/issues/2064 and
 # https://github.com/openshift/installer/issues/2037 are fully completed
-if [[ $RHCOS_IMAGE_URL = *.qcow2 ]]; then
-    RHCOS_IMAGE_FILENAME_OPENSTACK=$(basename $RHCOS_IMAGE_URL)
+# NOTE: strip sha256 query string in the image url
+RHCOS_IMAGE_URL_STRIPPED=`echo $RHCOS_IMAGE_URL | cut -f 1 -d \?`
+if [[ $RHCOS_IMAGE_URL_STRIPPED = *.qcow2 ]]; then
+    RHCOS_IMAGE_FILENAME_OPENSTACK=$(basename $RHCOS_IMAGE_URL_STRIPPED)
     IMAGE_URL=$(dirname $RHCOS_IMAGE_URL)
 else
     RHCOS_IMAGE_FILENAME_OPENSTACK="$(curl -g ${RHCOS_IMAGE_URL}/meta.json | jq -r '.images.openstack.path')"
