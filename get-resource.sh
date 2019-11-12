@@ -12,8 +12,10 @@ fi
 # "https://releases-art-rhcos.svc.ci.openshift.org/art/storage/releases/rhcos-4.2/420.8.20190708.2/rhcos-420.8.20190708.2-openstack.qcow2?sha256=xxx"
 # NOTE: strip sha256 query string in the image url
 RHCOS_IMAGE_URL_STRIPPED=`echo $RHCOS_IMAGE_URL | cut -f 1 -d \?`
-if [[ $RHCOS_IMAGE_URL_STRIPPED = *.qcow2 ]]; then
-    RHCOS_IMAGE_FILENAME_OPENSTACK=$(basename $RHCOS_IMAGE_URL_STRIPPED)
+if [[ $RHCOS_IMAGE_URL_STRIPPED = *.qcow2 ]] || [[ $RHCOS_IMAGE_URL_STRIPPED = *.qcow2.gz  ]]
+then
+    RHCOS_IMAGE_FILENAME_RAW=$(basename $RHCOS_IMAGE_URL_STRIPPED)
+    RHCOS_IMAGE_FILENAME_OPENSTACK=${RHCOS_IMAGE_FILENAME_RAW/.gz}
     IMAGE_URL=$(dirname $RHCOS_IMAGE_URL_STRIPPED)
 else
     echo "Unexpected image format $RHCOS_IMAGE_URL"
@@ -49,7 +51,13 @@ if [ "$FILECACHED" == "${RHCOS_IMAGE_FILENAME_OPENSTACK}" ] ; then
     curl -g -O "$CACHEURL/$RHCOS_IMAGE_FILENAME_OPENSTACK/$RHCOS_IMAGE_FILENAME_OPENSTACK"
     curl -g -O "$CACHEURL/$RHCOS_IMAGE_FILENAME_OPENSTACK/$RHCOS_IMAGE_FILENAME_COMPRESSED.md5sum"
 else
-    curl -g --insecure --compressed -L --dump-header "${RHCOS_IMAGE_FILENAME_OPENSTACK}.headers" -o "${RHCOS_IMAGE_FILENAME_OPENSTACK}" "${IMAGE_URL}/${RHCOS_IMAGE_FILENAME_OPENSTACK}"
+    curl -g --insecure --compressed -L --dump-header "${RHCOS_IMAGE_FILENAME_OPENSTACK}.headers" -o "${RHCOS_IMAGE_FILENAME_RAW}" "${IMAGE_URL}/${RHCOS_IMAGE_FILENAME_RAW}"
+
+    if [[ $RHCOS_IMAGE_FILENAME_RAW == *.gz ]]
+    then
+      gzip -d "$RHCOS_IMAGE_FILENAME_RAW"
+    fi
+
     qemu-img convert -O qcow2 -c "$RHCOS_IMAGE_FILENAME_OPENSTACK" "$RHCOS_IMAGE_FILENAME_COMPRESSED"
     md5sum "$RHCOS_IMAGE_FILENAME_COMPRESSED" | cut -f 1 -d " " > "$RHCOS_IMAGE_FILENAME_COMPRESSED.md5sum"
 fi
