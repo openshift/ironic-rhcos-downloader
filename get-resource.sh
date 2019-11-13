@@ -25,36 +25,20 @@ RHCOS_IMAGE_FILENAME_COMPRESSED=${RHCOS_IMAGE_FILENAME_OPENSTACK/-openstack/-com
 FFILENAME="rhcos-ootpa-latest.qcow2"
 
 mkdir -p /shared/html/images /shared/tmp
-cd /shared/html/images
-
-if [ -e $FFILENAME.headers ] ; then
-    FILECACHED=$(sed -n -e 's/.*filename=\([^\r]\+\).*/\1/p' "$FFILENAME.headers")
-    # We already have the required file
-    if [ "$FILECACHED" == "${RHCOS_IMAGE_FILENAME_OPENSTACK}" ] ; then
-        exit 0
-    fi
-fi
-
 TMPDIR=$(mktemp -d -p /shared/tmp)
 cd $TMPDIR
 
-# If we have a CACHEURL, download the headers file for the image its using
-# if it matches the filename we want then we are going to use it
-if [ -n "$CACHEURL" ] && curl -g --fail -O "$CACHEURL/$FFILENAME.headers" ; then
-    FILECACHED=$(sed -n -e 's/.*filename=\([^\r]\+\).*/\1/p' "$FFILENAME.headers")
-fi
-
 # We have a File in the cache that matches the one we want, use it
-if [ "$FILECACHED" == "${RHCOS_IMAGE_FILENAME_OPENSTACK}" ] ; then
-    mv $FFILENAME.headers "${RHCOS_IMAGE_FILENAME_OPENSTACK}.headers"
+if [ -s "/shared/html/images/$RHCOS_IMAGE_FILENAME_OPENSTACK/$RHCOS_IMAGE_FILENAME_COMPRESSED.md5sum" ]; then
+    echo "$RHCOS_IMAGE_FILENAME_OPENSTACK/$RHCOS_IMAGE_FILENAME_COMPRESSED.md5sum found, contents:"
+    cat /shared/html/images/$RHCOS_IMAGE_FILENAME_OPENSTACK/$RHCOS_IMAGE_FILENAME_COMPRESSED.md5sum
+elif curl -I --fail "$CACHEURL/$RHCOS_IMAGE_FILENAME_OPENSTACK/$RHCOS_IMAGE_FILENAME_COMPRESSED.md5sum"; then
     curl -g -O "$CACHEURL/$RHCOS_IMAGE_FILENAME_OPENSTACK/$RHCOS_IMAGE_FILENAME_COMPRESSED"
-    curl -g -O "$CACHEURL/$RHCOS_IMAGE_FILENAME_OPENSTACK/$RHCOS_IMAGE_FILENAME_OPENSTACK"
     curl -g -O "$CACHEURL/$RHCOS_IMAGE_FILENAME_OPENSTACK/$RHCOS_IMAGE_FILENAME_COMPRESSED.md5sum"
 else
-    curl -g --insecure --compressed -L --dump-header "${RHCOS_IMAGE_FILENAME_OPENSTACK}.headers" -o "${RHCOS_IMAGE_FILENAME_RAW}" "${IMAGE_URL}/${RHCOS_IMAGE_FILENAME_RAW}"
+    curl -g --insecure --compressed -o "${RHCOS_IMAGE_FILENAME_RAW}" "${IMAGE_URL}/${RHCOS_IMAGE_FILENAME_RAW}"
 
-    if [[ $RHCOS_IMAGE_FILENAME_RAW == *.gz ]]
-    then
+    if [[ $RHCOS_IMAGE_FILENAME_RAW == *.gz ]]; then
       gzip -d "$RHCOS_IMAGE_FILENAME_RAW"
     fi
 
@@ -62,11 +46,10 @@ else
     md5sum "$RHCOS_IMAGE_FILENAME_COMPRESSED" | cut -f 1 -d " " > "$RHCOS_IMAGE_FILENAME_COMPRESSED.md5sum"
 fi
 
-if [ -s "${RHCOS_IMAGE_FILENAME_OPENSTACK}" ] ; then
-    cd -
+if [ -s "${RHCOS_IMAGE_FILENAME_COMPRESSED}.md5sum" ] ; then
+    cd /shared/html/images
     chmod 755 $TMPDIR
     mv $TMPDIR $RHCOS_IMAGE_FILENAME_OPENSTACK
-    ln -sf "$RHCOS_IMAGE_FILENAME_OPENSTACK/$RHCOS_IMAGE_FILENAME_OPENSTACK.headers" $FFILENAME.headers
     ln -sf "$RHCOS_IMAGE_FILENAME_OPENSTACK/$RHCOS_IMAGE_FILENAME_COMPRESSED" $FFILENAME
     ln -sf "$RHCOS_IMAGE_FILENAME_OPENSTACK/$RHCOS_IMAGE_FILENAME_COMPRESSED.md5sum" "$FFILENAME.md5sum"
 else
