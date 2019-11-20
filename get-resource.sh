@@ -9,13 +9,13 @@ if [ -z "$RHCOS_IMAGE_URL" ] ; then
 fi
 
 # When provided by openshift-installer the URL is like
-# "https://releases-art-rhcos.svc.ci.openshift.org/art/storage/releases/rhcos-4.2/420.8.20190708.2/rhcos-420.8.20190708.2-openstack.qcow2?sha256=xxx"
+# "https://releases-art-rhcos.svc.ci.openshift.org/art/storage/releases/rhcos-4.2/420.8.20190708.2/rhcos-420.8.20190708.2-openstack.qcow2.gz?sha256=xxx"
 # NOTE: strip sha256 query string in the image url
 RHCOS_IMAGE_URL_STRIPPED=`echo $RHCOS_IMAGE_URL | cut -f 1 -d \?`
-if [[ $RHCOS_IMAGE_URL_STRIPPED = *.qcow2 ]] || [[ $RHCOS_IMAGE_URL_STRIPPED = *.qcow2.gz  ]]
-then
+if [[ $RHCOS_IMAGE_URL_STRIPPED =~ qcow2.[gx]z$ ]]; then
     RHCOS_IMAGE_FILENAME_RAW=$(basename $RHCOS_IMAGE_URL_STRIPPED)
-    RHCOS_IMAGE_FILENAME_OPENSTACK=${RHCOS_IMAGE_FILENAME_RAW/.gz}
+    RHCOS_IMAGE_FILENAME_OPENSTACK=${RHCOS_IMAGE_FILENAME_RAW/.[gx]z}
+    IMAGE_FILENAME_EXTENSION=${RHCOS_IMAGE_FILENAME_RAW/$RHCOS_IMAGE_FILENAME_OPENSTACK}
     IMAGE_URL=$(dirname $RHCOS_IMAGE_URL_STRIPPED)
 else
     echo "Unexpected image format $RHCOS_IMAGE_URL"
@@ -38,8 +38,10 @@ elif curl -I --fail "$CACHEURL/$RHCOS_IMAGE_FILENAME_OPENSTACK/$RHCOS_IMAGE_FILE
 else
     curl -g --insecure --compressed -L -o "${RHCOS_IMAGE_FILENAME_RAW}" "${IMAGE_URL}/${RHCOS_IMAGE_FILENAME_RAW}"
 
-    if [[ $RHCOS_IMAGE_FILENAME_RAW == *.gz ]]; then
+    if [[ $IMAGE_FILENAME_EXTENSION == .gz ]]; then
       gzip -d "$RHCOS_IMAGE_FILENAME_RAW"
+    elif [[ $IMAGE_FILENAME_EXTENSION == .xz ]]; then
+      unxz "$RHCOS_IMAGE_FILENAME_RAW"
     fi
 
     qemu-img convert -O qcow2 -c "$RHCOS_IMAGE_FILENAME_OPENSTACK" "$RHCOS_IMAGE_FILENAME_COMPRESSED"
