@@ -57,3 +57,4 @@ if [ -s "${RHCOS_IMAGE_FILENAME_COMPRESSED}.md5sum" ] ; then
 else
     rm -rf $TMPDIR
 fi
+
