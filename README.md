@@ -1,2 +1,3 @@
-# rhcos-downloader
-Download and prepare rhcos images for deployment
+# machine-os-downloader
+Download and prepare machine os images for deployment.
+
