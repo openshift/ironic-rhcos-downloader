@@ -1,6 +1,10 @@
 #!/bin/bash -xe
 #CACHEURL=http://172.22.0.1/images
 
+# Check and set http(s)_proxy. Required for cURL to use a proxy
+export http_proxy=${http_proxy:-$HTTP_PROXY}
+export https_proxy=${https_proxy:-$HTTPS_PROXY}
+
 # Which image should we use
 export RHCOS_IMAGE_URL=${1:-$RHCOS_IMAGE_URL}
 if [ -z "$RHCOS_IMAGE_URL" ] ; then
