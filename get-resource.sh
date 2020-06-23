@@ -36,7 +36,18 @@ if [ -s "/shared/html/images/$RHCOS_IMAGE_FILENAME_OPENSTACK/$RHCOS_IMAGE_FILENA
     echo "$RHCOS_IMAGE_FILENAME_OPENSTACK/$RHCOS_IMAGE_FILENAME_COMPRESSED.md5sum found, contents:"
     cat /shared/html/images/$RHCOS_IMAGE_FILENAME_OPENSTACK/$RHCOS_IMAGE_FILENAME_COMPRESSED.md5sum
 else
-    curl -g --insecure --compressed -L -o "${RHCOS_IMAGE_FILENAME_RAW}" "${IMAGE_URL}/${RHCOS_IMAGE_FILENAME_RAW}"
+    CONNECT_TIMEOUT=120
+    MAX_ATTEMPTS=5
+
+    for i in $(seq ${MAX_ATTEMPTS}); do
+        if ! curl -g --insecure --compressed -L --connect-timeout ${CONNECT_TIMEOUT} -o "${RHCOS_IMAGE_FILENAME_RAW}" "${IMAGE_URL}/${RHCOS_IMAGE_FILENAME_RAW}"; then
+          SLEEP_TIME=$((i*i))
+          echo "Download failed, retrying after ${SLEEP_TIME} seconds..."; 
+          sleep ${SLEEP_TIME}
+        else
+          break
+        fi
+    done
 
     if [[ $IMAGE_FILENAME_EXTENSION == .gz ]]; then
       gzip -d "$RHCOS_IMAGE_FILENAME_RAW"
