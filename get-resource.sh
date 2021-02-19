@@ -41,9 +41,14 @@ else
 
     for i in $(seq ${MAX_ATTEMPTS}); do
         if ! curl -g --insecure --compressed -L --connect-timeout ${CONNECT_TIMEOUT} -o "${RHCOS_IMAGE_FILENAME_RAW}" "${IMAGE_URL}/${RHCOS_IMAGE_FILENAME_RAW}"; then
-          SLEEP_TIME=$((i*i))
-          echo "Download failed, retrying after ${SLEEP_TIME} seconds..."; 
-          sleep ${SLEEP_TIME}
+          if (( ${i} == ${MAX_ATTEMPTS} )); then
+            echo "Download failed."
+            exit 1
+          else
+            SLEEP_TIME=$((i*i))
+            echo "Download failed, retrying after ${SLEEP_TIME} seconds..."
+            sleep ${SLEEP_TIME}
+          fi
         else
           break
         fi
