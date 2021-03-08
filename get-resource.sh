@@ -17,24 +17,25 @@ fi
 RHCOS_IMAGE_URL_STRIPPED=`echo $RHCOS_IMAGE_URL | cut -f 1 -d \?`
 if [[ $RHCOS_IMAGE_URL_STRIPPED =~ qcow2(\.[gx]z)?$ ]]; then
     RHCOS_IMAGE_FILENAME_RAW=$(basename $RHCOS_IMAGE_URL_STRIPPED)
-    RHCOS_IMAGE_FILENAME_OPENSTACK=${RHCOS_IMAGE_FILENAME_RAW/%.[gx]z}
-    IMAGE_FILENAME_EXTENSION=${RHCOS_IMAGE_FILENAME_RAW/$RHCOS_IMAGE_FILENAME_OPENSTACK}
+    RHCOS_IMAGE_FILENAME_QCOW=${RHCOS_IMAGE_FILENAME_RAW/%.[gx]z}
+    IMAGE_FILENAME_EXTENSION=${RHCOS_IMAGE_FILENAME_RAW/$RHCOS_IMAGE_FILENAME_QCOW}
     IMAGE_URL=$(dirname $RHCOS_IMAGE_URL_STRIPPED)
 else
     echo "Unexpected image format $RHCOS_IMAGE_URL"
     exit 1
 fi
-RHCOS_IMAGE_FILENAME_COMPRESSED=${RHCOS_IMAGE_FILENAME_OPENSTACK/-openstack/-compressed}
+
+RHCOS_IMAGE_FILENAME_CACHED=cached-${RHCOS_IMAGE_FILENAME_QCOW}
 FFILENAME="rhcos-ootpa-latest.qcow2"
 
 mkdir -p /shared/html/images /shared/tmp
 TMPDIR=$(mktemp -d -p /shared/tmp)
 cd $TMPDIR
 
-# We have a File in the cache that matches the one we want, use it
-if [ -s "/shared/html/images/$RHCOS_IMAGE_FILENAME_OPENSTACK/$RHCOS_IMAGE_FILENAME_COMPRESSED.md5sum" ]; then
-    echo "$RHCOS_IMAGE_FILENAME_OPENSTACK/$RHCOS_IMAGE_FILENAME_COMPRESSED.md5sum found, contents:"
-    cat /shared/html/images/$RHCOS_IMAGE_FILENAME_OPENSTACK/$RHCOS_IMAGE_FILENAME_COMPRESSED.md5sum
+# We have a file in the cache that matches the one we want, use it
+if [ -s "/shared/html/images/$RHCOS_IMAGE_FILENAME_QCOW/$RHCOS_IMAGE_FILENAME_CACHED.md5sum" ]; then
+    echo "$RHCOS_IMAGE_FILENAME_QCOW/$RHCOS_IMAGE_FILENAME_CACHED.md5sum found, contents:"
+    cat /shared/html/images/$RHCOS_IMAGE_FILENAME_QCOW/$RHCOS_IMAGE_FILENAME_CACHED.md5sum
 else
     CONNECT_TIMEOUT=120
     MAX_ATTEMPTS=5
@@ -60,17 +61,27 @@ else
       unxz "$RHCOS_IMAGE_FILENAME_RAW"
     fi
 
-    qemu-img convert -O qcow2 -c "$RHCOS_IMAGE_FILENAME_OPENSTACK" "$RHCOS_IMAGE_FILENAME_COMPRESSED"
-    md5sum "$RHCOS_IMAGE_FILENAME_COMPRESSED" | cut -f 1 -d " " > "$RHCOS_IMAGE_FILENAME_COMPRESSED.md5sum"
+    qemu-img convert -O qcow2 -c "$RHCOS_IMAGE_FILENAME_QCOW" "$RHCOS_IMAGE_FILENAME_CACHED"
+    md5sum "$RHCOS_IMAGE_FILENAME_CACHED" | cut -f 1 -d " " > "$RHCOS_IMAGE_FILENAME_CACHED.md5sum"
 fi
 
-if [ -s "${RHCOS_IMAGE_FILENAME_COMPRESSED}.md5sum" ] ; then
+if [ -s "${RHCOS_IMAGE_FILENAME_CACHED}.md5sum" ] ; then
     cd /shared/html/images
     chmod 755 $TMPDIR
-    mv $TMPDIR $RHCOS_IMAGE_FILENAME_OPENSTACK
-    ln -sf "$RHCOS_IMAGE_FILENAME_OPENSTACK/$RHCOS_IMAGE_FILENAME_COMPRESSED" $FFILENAME
-    ln -sf "$RHCOS_IMAGE_FILENAME_OPENSTACK/$RHCOS_IMAGE_FILENAME_COMPRESSED.md5sum" "$FFILENAME.md5sum"
+    mv $TMPDIR $RHCOS_IMAGE_FILENAME_QCOW
+    ln -sf "$RHCOS_IMAGE_FILENAME_QCOW/$RHCOS_IMAGE_FILENAME_CACHED" $FFILENAME
+    ln -sf "$RHCOS_IMAGE_FILENAME_QCOW/$RHCOS_IMAGE_FILENAME_CACHED.md5sum" "$FFILENAME.md5sum"
 else
     rm -rf $TMPDIR
+fi
+
+# For backwards compatibility, if the rhcos image name contains -openstack, we want to
+# create a symlink to the original in the old format.  The old format had a substitution
+# which required the existence of -openstack in the name.
+if [[ ${RHCOS_IMAGE_FILENAME_QCOW} == *"-openstack"* ]] ; then
+    cd "/shared/html/images/${RHCOS_IMAGE_FILENAME_QCOW}"
+    RHCOS_IMAGE_FILENAME_COMPRESSED=${RHCOS_IMAGE_FILENAME_QCOW/-openstack/-compressed}
+    ln -sf "$RHCOS_IMAGE_FILENAME_CACHED" "$RHCOS_IMAGE_FILENAME_COMPRESSED"
+    ln -sf "$RHCOS_IMAGE_FILENAME_CACHED.md5sum" "$RHCOS_IMAGE_FILENAME_COMPRESSED.md5sum"
 fi
 
