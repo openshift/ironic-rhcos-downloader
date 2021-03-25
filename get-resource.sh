@@ -3,6 +3,7 @@
 # Check and set http(s)_proxy. Required for cURL to use a proxy
 export http_proxy=${http_proxy:-$HTTP_PROXY}
 export https_proxy=${https_proxy:-$HTTPS_PROXY}
+export CURL_CA_BUNDLE=${CURL_CA_BUNDLE:-/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem}
 
 # Which image should we use
 export RHCOS_IMAGE_URL=${1:-$RHCOS_IMAGE_URL}
@@ -41,7 +42,7 @@ else
     MAX_ATTEMPTS=5
 
     for i in $(seq ${MAX_ATTEMPTS}); do
-        if ! curl -g --insecure --compressed -L --connect-timeout ${CONNECT_TIMEOUT} -o "${RHCOS_IMAGE_FILENAME_RAW}" "${IMAGE_URL}/${RHCOS_IMAGE_FILENAME_RAW}"; then
+        if ! curl -g --compressed -L --connect-timeout ${CONNECT_TIMEOUT} -o "${RHCOS_IMAGE_FILENAME_RAW}" "${IMAGE_URL}/${RHCOS_IMAGE_FILENAME_RAW}"; then
           if (( ${i} == ${MAX_ATTEMPTS} )); then
             echo "Download failed."
             exit 1
