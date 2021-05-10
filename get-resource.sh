@@ -5,6 +5,7 @@ export http_proxy=${http_proxy:-$HTTP_PROXY}
 export https_proxy=${https_proxy:-$HTTPS_PROXY}
 export no_proxy=${no_proxy:-$NO_PROXY}
 export CURL_CA_BUNDLE=${CURL_CA_BUNDLE:-/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem}
+export IP_OPTIONS=${IP_OPTIONS:-}
 
 # Which image should we use
 export RHCOS_IMAGE_URL=${1:-$RHCOS_IMAGE_URL}
@@ -61,6 +62,11 @@ else
       gzip -d "$RHCOS_IMAGE_FILENAME_RAW"
     elif [[ $IMAGE_FILENAME_EXTENSION == .xz ]]; then
       unxz "$RHCOS_IMAGE_FILENAME_RAW"
+    fi
+
+    if [ -n "$IP_OPTIONS" ] ; then
+        BOOT_DISK=$(LIBGUESTFS_BACKEND=direct virt-filesystems -a "$RHCOS_IMAGE_FILENAME_QCOW" -l | grep boot | cut -f1 -d" ")
+        LIBGUESTFS_BACKEND=direct virt-edit -a "$RHCOS_IMAGE_FILENAME_QCOW" -m "$BOOT_DISK" /boot/loader/entries/ostree-1-rhcos.conf -e "s/^options/options ${IP_OPTIONS}/"
     fi
 
     qemu-img convert -O qcow2 -c "$RHCOS_IMAGE_FILENAME_QCOW" "$RHCOS_IMAGE_FILENAME_CACHED"
