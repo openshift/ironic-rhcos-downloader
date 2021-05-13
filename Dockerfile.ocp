@@ -1,9 +1,9 @@
 FROM registry.ci.openshift.org/ocp/builder:rhel-8-base-openshift-4.9
 
 RUN dnf upgrade -y \
- && dnf install -y qemu-img jq xz libguestfs-tools \
+ && dnf install -y qemu-img jq xz libguestfs-tools coreos-installer \
  && dnf clean all \
  && rm -rf /var/cache/{yum,dnf}/*
 
 COPY ./get-resource.sh /usr/local/bin/get-resource.sh
-
+COPY ./get-live-images.sh /usr/local/bin/get-live-images.sh
