@@ -63,6 +63,11 @@ else
       unxz "$RHCOS_IMAGE_FILENAME_RAW"
     fi
 
+    if [ -n "$IP_OPTIONS" ] ; then
+       BOOT_DISK=$(LIBGUESTFS_BACKEND=direct virt-filesystems -a "$RHCOS_IMAGE_FILENAME_QCOW" -l | grep boot | cut -f1 -d" ")
+       LIBGUESTFS_BACKEND=direct virt-edit -a "$RHCOS_IMAGE_FILENAME_QCOW" -m "$BOOT_DISK" /boot/loader/entries/ostree-1-rhcos.conf -e "s/^options/options ${IP_OPTIONS}/"
+    fi
+
     qemu-img convert -O qcow2 -c "$RHCOS_IMAGE_FILENAME_QCOW" "$RHCOS_IMAGE_FILENAME_CACHED"
     md5sum "$RHCOS_IMAGE_FILENAME_CACHED" | cut -f 1 -d " " > "$RHCOS_IMAGE_FILENAME_CACHED.md5sum"
 fi
