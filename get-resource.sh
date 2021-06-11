@@ -29,6 +29,7 @@ FFILENAME="rhcos-ootpa-latest.qcow2"
 
 mkdir -p /shared/html/images /shared/tmp
 TMPDIR=$(mktemp -d -p /shared/tmp)
+trap "rm -fr $TMPDIR" EXIT
 cd $TMPDIR
 
 # We have a File in the cache that matches the one we want, use it
@@ -65,7 +66,5 @@ if [ -s "${RHCOS_IMAGE_FILENAME_COMPRESSED}.md5sum" ] ; then
     mv $TMPDIR $RHCOS_IMAGE_FILENAME_OPENSTACK
     ln -sf "$RHCOS_IMAGE_FILENAME_OPENSTACK/$RHCOS_IMAGE_FILENAME_COMPRESSED" $FFILENAME
     ln -sf "$RHCOS_IMAGE_FILENAME_OPENSTACK/$RHCOS_IMAGE_FILENAME_COMPRESSED.md5sum" "$FFILENAME.md5sum"
-else
-    rm -rf $TMPDIR
 fi
 
