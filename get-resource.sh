@@ -32,6 +32,7 @@ FFILENAME="rhcos-ootpa-latest.qcow2"
 
 mkdir -p /shared/html/images /shared/tmp
 TMPDIR=$(mktemp -d -p /shared/tmp)
+trap "rm -fr $TMPDIR" EXIT
 cd $TMPDIR
 
 # We have a file in the cache that matches the one we want, use it
@@ -73,8 +74,6 @@ if [ -s "${RHCOS_IMAGE_FILENAME_CACHED}.md5sum" ] ; then
     mv $TMPDIR $RHCOS_IMAGE_FILENAME_QCOW
     ln -sf "$RHCOS_IMAGE_FILENAME_QCOW/$RHCOS_IMAGE_FILENAME_CACHED" $FFILENAME
     ln -sf "$RHCOS_IMAGE_FILENAME_QCOW/$RHCOS_IMAGE_FILENAME_CACHED.md5sum" "$FFILENAME.md5sum"
-else
-    rm -rf $TMPDIR
 fi
 
 # For backwards compatibility, if the rhcos image name contains -openstack, we want to
