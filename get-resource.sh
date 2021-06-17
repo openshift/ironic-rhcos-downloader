@@ -28,10 +28,23 @@ else
     exit 1
 fi
 
+RHCOS_IMAGE_FILENAME_COMPRESSED=${RHCOS_IMAGE_FILENAME_QCOW/-openstack/-compressed}
 RHCOS_IMAGE_FILENAME_CACHED=cached-${RHCOS_IMAGE_FILENAME_QCOW}
 FFILENAME="rhcos-ootpa-latest.qcow2"
 
-mkdir -p /shared/html/images /shared/tmp
+mkdir -p /shared/html/images
+
+# Added to fix image path incompatibility between 4.7 and 4.8
+# as filed in https://bugzilla.redhat.com/show_bug.cgi?id=1972572
+if [[ ${RHCOS_IMAGE_FILENAME_QCOW} == *"-openstack"* && -s "/shared/html/images/$RHCOS_IMAGE_FILENAME_QCOW/$RHCOS_IMAGE_FILENAME_COMPRESSED.md5sum" && ! -s "/shared/html/images/$RHCOS_IMAGE_FILENAME_QCOW/$RHCOS_IMAGE_FILENAME_CACHED.md5sum" ]]; then
+    cd /shared/html/images
+    mv "${RHCOS_IMAGE_FILENAME_QCOW}/$RHCOS_IMAGE_FILENAME_COMPRESSED.md5sum" "${RHCOS_IMAGE_FILENAME_QCOW}/$RHCOS_IMAGE_FILENAME_CACHED.md5sum"
+    mv "${RHCOS_IMAGE_FILENAME_QCOW}/$RHCOS_IMAGE_FILENAME_COMPRESSED" "${RHCOS_IMAGE_FILENAME_QCOW}/$RHCOS_IMAGE_FILENAME_CACHED"
+    ln -sf "$RHCOS_IMAGE_FILENAME_QCOW/$RHCOS_IMAGE_FILENAME_CACHED" $FFILENAME
+    ln -sf "$RHCOS_IMAGE_FILENAME_QCOW/$RHCOS_IMAGE_FILENAME_CACHED.md5sum" "$FFILENAME.md5sum"
+fi
+
+mkdir -p /shared/tmp
 TMPDIR=$(mktemp -d -p /shared/tmp)
 trap "rm -fr $TMPDIR" EXIT
 cd $TMPDIR
@@ -77,6 +90,7 @@ fi
 if [ -s "${RHCOS_IMAGE_FILENAME_CACHED}.md5sum" ] ; then
     cd /shared/html/images
     chmod 755 $TMPDIR
+    rm -rf $RHCOS_IMAGE_FILENAME_QCOW
     mv $TMPDIR $RHCOS_IMAGE_FILENAME_QCOW
     ln -sf "$RHCOS_IMAGE_FILENAME_QCOW/$RHCOS_IMAGE_FILENAME_CACHED" $FFILENAME
     ln -sf "$RHCOS_IMAGE_FILENAME_QCOW/$RHCOS_IMAGE_FILENAME_CACHED.md5sum" "$FFILENAME.md5sum"
@@ -87,7 +101,6 @@ fi
 # which required the existence of -openstack in the name.
 if [[ ${RHCOS_IMAGE_FILENAME_QCOW} == *"-openstack"* ]] ; then
     cd "/shared/html/images/${RHCOS_IMAGE_FILENAME_QCOW}"
-    RHCOS_IMAGE_FILENAME_COMPRESSED=${RHCOS_IMAGE_FILENAME_QCOW/-openstack/-compressed}
     ln -sf "$RHCOS_IMAGE_FILENAME_CACHED" "$RHCOS_IMAGE_FILENAME_COMPRESSED"
     ln -sf "$RHCOS_IMAGE_FILENAME_CACHED.md5sum" "$RHCOS_IMAGE_FILENAME_COMPRESSED.md5sum"
 fi
