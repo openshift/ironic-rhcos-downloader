@@ -3,6 +3,7 @@
 # Check and set http(s)_proxy. Required for cURL to use a proxy
 export http_proxy=${http_proxy:-$HTTP_PROXY}
 export https_proxy=${https_proxy:-$HTTPS_PROXY}
+export no_proxy=${no_proxy:-$NO_PROXY}
 
 # Which image should we use
 export RHCOS_IMAGE_URL=${1:-$RHCOS_IMAGE_URL}
