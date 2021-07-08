@@ -4,6 +4,7 @@
 export http_proxy=${http_proxy:-$HTTP_PROXY}
 export https_proxy=${https_proxy:-$HTTPS_PROXY}
 export no_proxy=${no_proxy:-$NO_PROXY}
+export IP_OPTIONS=${IP_OPTIONS:-}
 
 # Which image should we use
 export RHCOS_IMAGE_URL=${1:-$RHCOS_IMAGE_URL}
@@ -30,6 +31,7 @@ FFILENAME="rhcos-ootpa-latest.qcow2"
 
 mkdir -p /shared/html/images /shared/tmp
 TMPDIR=$(mktemp -d -p /shared/tmp)
+trap "rm -fr $TMPDIR" EXIT
 cd $TMPDIR
 
 # We have a File in the cache that matches the one we want, use it
@@ -56,6 +58,11 @@ else
       unxz "$RHCOS_IMAGE_FILENAME_RAW"
     fi
 
+    if [ -n "$IP_OPTIONS" ] ; then
+        BOOT_DISK=$(LIBGUESTFS_BACKEND=direct virt-filesystems -a "$RHCOS_IMAGE_FILENAME_OPENSTACK" -l | grep boot | cut -f1 -d" ")
+        LIBGUESTFS_BACKEND=direct virt-edit -a "$RHCOS_IMAGE_FILENAME_OPENSTACK" -m "$BOOT_DISK" /boot/loader/entries/ostree-1-rhcos.conf -e "s/^options/options ${IP_OPTIONS}/"
+    fi
+
     qemu-img convert -O qcow2 -c "$RHCOS_IMAGE_FILENAME_OPENSTACK" "$RHCOS_IMAGE_FILENAME_COMPRESSED"
     md5sum "$RHCOS_IMAGE_FILENAME_COMPRESSED" | cut -f 1 -d " " > "$RHCOS_IMAGE_FILENAME_COMPRESSED.md5sum"
 fi
@@ -66,7 +73,5 @@ if [ -s "${RHCOS_IMAGE_FILENAME_COMPRESSED}.md5sum" ] ; then
     mv $TMPDIR $RHCOS_IMAGE_FILENAME_OPENSTACK
     ln -sf "$RHCOS_IMAGE_FILENAME_OPENSTACK/$RHCOS_IMAGE_FILENAME_COMPRESSED" $FFILENAME
     ln -sf "$RHCOS_IMAGE_FILENAME_OPENSTACK/$RHCOS_IMAGE_FILENAME_COMPRESSED.md5sum" "$FFILENAME.md5sum"
-else
-    rm -rf $TMPDIR
 fi
 
