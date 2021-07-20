@@ -64,6 +64,10 @@ function cache_image() {
 			coreos-installer iso kargs modify -a "$IP_OPTIONS" "$FILENAME/$FILENAME_CACHED"
 		fi
 	fi
+	# We need to create a symlink so that the second-level image cache
+	# can download and prefix 'cached-' to the filename correctly
+	cd $FILENAME
+	ln -sf "$FILENAME_CACHED" "$FILENAME"
 }
 
 mkdir -p /shared/html/images /shared/tmp
