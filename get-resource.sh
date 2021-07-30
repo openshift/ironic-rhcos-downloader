@@ -3,6 +3,7 @@
 # Check and set http(s)_proxy. Required for cURL to use a proxy
 export http_proxy=${http_proxy:-$HTTP_PROXY}
 export https_proxy=${https_proxy:-$HTTPS_PROXY}
+export no_proxy=${no_proxy:-$NO_PROXY}
 export IP_OPTIONS=${IP_OPTIONS:-}
 
 # Which image should we use
