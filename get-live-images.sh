@@ -19,7 +19,7 @@ function download_image() {
 	MAX_ATTEMPTS=5
 
 	for i in $(seq ${MAX_ATTEMPTS}); do
-		if ! curl -g --compressed -L --fail --connect-timeout ${CONNECT_TIMEOUT} -o "$1" "$2"; then
+		if ! curl -v -g --compressed -L --fail --connect-timeout ${CONNECT_TIMEOUT} -o "$1" "$2"; then
 			if (( ${i} == ${MAX_ATTEMPTS} )); then
 				echo "Download failed."
 				exit 1
