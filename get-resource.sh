@@ -83,7 +83,10 @@ else
         LIBGUESTFS_BACKEND=direct virt-edit -a "$RHCOS_IMAGE_FILENAME_QCOW" -m "$BOOT_DISK" /boot/loader/entries/ostree-1-rhcos.conf -e "s/^options/options ${IP_OPTIONS}/"
     fi
 
-    qemu-img convert -O qcow2 -c "$RHCOS_IMAGE_FILENAME_QCOW" "$RHCOS_IMAGE_FILENAME_CACHED"
+    # For compatibity we need to keep both $RHCOS_IMAGE_FILENAME_QCOW and $RHCOS_IMAGE_FILENAME_CACHED
+    # RHCOS_IMAGE_FILENAME_QCOW is downloaded by the image-cache pods when they initialize
+    # RHCOS_IMAGE_FILENAME_CACHED is used by IPA when provisioning
+    ln -sf "$RHCOS_IMAGE_FILENAME_QCOW" "$RHCOS_IMAGE_FILENAME_CACHED"
     md5sum "$RHCOS_IMAGE_FILENAME_CACHED" | cut -f 1 -d " " > "$RHCOS_IMAGE_FILENAME_CACHED.md5sum"
 fi
 
