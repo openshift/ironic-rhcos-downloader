@@ -58,7 +58,7 @@ else
     MAX_ATTEMPTS=5
 
     for i in $(seq ${MAX_ATTEMPTS}); do
-        if ! curl -g --compressed -L --fail --connect-timeout ${CONNECT_TIMEOUT} -o "${RHCOS_IMAGE_FILENAME_RAW}" "${IMAGE_URL}/${RHCOS_IMAGE_FILENAME_RAW}"; then
+        if ! curl -v -g --compressed -L --fail --connect-timeout ${CONNECT_TIMEOUT} -o "${RHCOS_IMAGE_FILENAME_RAW}" "${IMAGE_URL}/${RHCOS_IMAGE_FILENAME_RAW}"; then
           if (( ${i} == ${MAX_ATTEMPTS} )); then
             echo "Download failed."
             exit 1
