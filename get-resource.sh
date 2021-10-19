@@ -32,6 +32,12 @@ mkdir -p /shared/html/images /shared/tmp
 TMPDIR=$(mktemp -d -p /shared/tmp)
 cd $TMPDIR
 
+# curl doesn't handle NO_PROXY the same way as code written in golang
+# clear the proxy variables if needed to mimic handling them the golang way
+if clearproxy "${IMAGE_URL}/${RHCOS_IMAGE_FILENAME_RAW}" ; then
+    unset HTTP_PROXY http_proxy HTTPS_PROXY https_proxy
+fi
+
 # We have a File in the cache that matches the one we want, use it
 if [ -s "/shared/html/images/$RHCOS_IMAGE_FILENAME_OPENSTACK/$RHCOS_IMAGE_FILENAME_COMPRESSED.md5sum" ]; then
     echo "$RHCOS_IMAGE_FILENAME_OPENSTACK/$RHCOS_IMAGE_FILENAME_COMPRESSED.md5sum found, contents:"
