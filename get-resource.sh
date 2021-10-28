@@ -49,6 +49,12 @@ TMPDIR=$(mktemp -d -p /shared/tmp)
 trap "rm -fr $TMPDIR" EXIT
 cd $TMPDIR
 
+# curl doesn't handle NO_PROXY the same way as code written in golang
+# clear the proxy variables if needed to mimic handling them the golang way
+if clearproxy "${IMAGE_URL}/${RHCOS_IMAGE_FILENAME_RAW}" ; then
+    unset HTTP_PROXY http_proxy HTTPS_PROXY https_proxy
+fi
+
 # We have a file in the cache that matches the one we want, use it
 if [ -s "/shared/html/images/$RHCOS_IMAGE_FILENAME_QCOW/$RHCOS_IMAGE_FILENAME_CACHED.md5sum" ]; then
     echo "$RHCOS_IMAGE_FILENAME_QCOW/$RHCOS_IMAGE_FILENAME_CACHED.md5sum found, contents:"
