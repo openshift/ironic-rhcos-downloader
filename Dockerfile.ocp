@@ -1,10 +1,12 @@
 FROM registry.ci.openshift.org/ocp/builder:rhel-8-golang-1.16-openshift-4.8 AS builder
 
+WORKDIR /tmp
+
 COPY clearproxy.go clearproxy.go
 RUN go build clearproxy.go
 
 FROM registry.ci.openshift.org/ocp/builder:rhel-8-base-openshift-4.8
-COPY --from=builder /go/src/github.com/openshift/origin/clearproxy /usr/local/bin/clearproxy
+COPY --from=builder /tmp/clearproxy /usr/local/bin/clearproxy
 
 RUN dnf upgrade -y \
  && dnf install -y qemu-img jq xz libguestfs-tools \
