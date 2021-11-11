@@ -1,12 +1,13 @@
 FROM registry.ci.openshift.org/ocp/builder:rhel-8-golang-1.16-openshift-4.10 AS builder
 
-WORKDIR /tmp
+WORKDIR /go/src/github.com/openshift/ironic-rhcos-downloader
 
 COPY clearproxy.go clearproxy.go
-RUN go build clearproxy.go
+COPY go.mod go.mod
+RUN go build -o /go/bin/clearproxy clearproxy.go
 
 FROM registry.ci.openshift.org/ocp/builder:rhel-8-base-openshift-4.10
-COPY --from=builder /tmp/clearproxy /usr/local/bin/clearproxy
+COPY --from=builder /go/bin/clearproxy /usr/local/bin/clearproxy
 
 RUN dnf upgrade -y \
  && dnf install -y qemu-img jq xz libguestfs-tools coreos-installer \
