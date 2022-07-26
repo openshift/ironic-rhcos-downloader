@@ -86,7 +86,13 @@ else
 
     if [ -n "$IP_OPTIONS" ] ; then
         BOOT_DISK=$(LIBGUESTFS_BACKEND=direct virt-filesystems -a "$RHCOS_IMAGE_FILENAME_QCOW" -l | grep boot | cut -f1 -d" ")
-        LIBGUESTFS_BACKEND=direct virt-edit -a "$RHCOS_IMAGE_FILENAME_QCOW" -m "$BOOT_DISK" /boot/loader/entries/ostree-1-rhcos.conf -e "s/^options/options ${IP_OPTIONS}/"
+        # Iterate all available ostree boot configurations to support RHCOS/FCOS seamlessly
+        BOOT_ENTRIES=$(LIBGUESTFS_BACKEND=direct virt-ls -a "$RHCOS_IMAGE_FILENAME_QCOW" -m "$BOOT_DISK" /boot/loader/entries)
+        for BOOT_ENTRY in $BOOT_ENTRIES; do
+          if [[ $BOOT_ENTRY =~ ostree-1-.*.conf ]] ; then
+            LIBGUESTFS_BACKEND=direct virt-edit -a "$RHCOS_IMAGE_FILENAME_QCOW" -m "$BOOT_DISK" "/boot/loader/entries/$BOOT_ENTRY" -e "s/^options/options ${IP_OPTIONS}/"
+          fi
+        done
     fi
 
     # For compatibity we need to keep both $RHCOS_IMAGE_FILENAME_QCOW and $RHCOS_IMAGE_FILENAME_CACHED
