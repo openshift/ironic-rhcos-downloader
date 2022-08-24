@@ -10,7 +10,7 @@ FROM registry.ci.openshift.org/ocp/builder:rhel-9-base-openshift-4.12
 COPY --from=builder /go/bin/clearproxy /usr/local/bin/clearproxy
 
 RUN dnf upgrade -y \
- && dnf install -y qemu-img jq xz libguestfs-tools coreos-installer \
+ && dnf install -y qemu-img jq xz libguestfs-tools-c perl-interpreter coreos-installer \
  && dnf clean all \
  && rm -rf /var/cache/{yum,dnf}/*
 
