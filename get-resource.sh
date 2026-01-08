@@ -44,10 +44,20 @@ if [[ ${RHCOS_IMAGE_FILENAME_QCOW} == *"-openstack"* && -s "/shared/html/images/
     ln -sf "$RHCOS_IMAGE_FILENAME_QCOW/$RHCOS_IMAGE_FILENAME_CACHED.md5sum" "$FFILENAME.md5sum"
 fi
 
+# Create a working directory under /shared/tmp which is writable.
+# We avoid using /tmp directly as it may be read-only in the container.
 mkdir -p /shared/tmp
-TMPDIR=$(mktemp -d -p /shared/tmp)
-trap "rm -fr $TMPDIR" EXIT
-cd $TMPDIR
+WORK_DIR=$(mktemp -d -p /shared/tmp)
+
+# Export TMPDIR so that libguestfs tools (virt-filesystems, virt-ls, virt-edit)
+# use our writable directory instead of the default /tmp.
+export TMPDIR="${WORK_DIR}"
+
+# Clean up on exit: unset TMPDIR to avoid referencing a deleted directory,
+# then remove the working directory.
+trap "unset TMPDIR; rm -fr ${WORK_DIR}" EXIT
+
+cd ${WORK_DIR}
 
 # curl doesn't handle NO_PROXY the same way as code written in golang
 # clear the proxy variables if needed to mimic handling them the golang way
@@ -104,9 +114,9 @@ fi
 
 if [ -s "${RHCOS_IMAGE_FILENAME_CACHED}.md5sum" ] ; then
     cd /shared/html/images
-    chmod 755 $TMPDIR
+    chmod 755 ${WORK_DIR}
     rm -rf $RHCOS_IMAGE_FILENAME_QCOW
-    mv $TMPDIR $RHCOS_IMAGE_FILENAME_QCOW
+    mv ${WORK_DIR} $RHCOS_IMAGE_FILENAME_QCOW
     ln -sf "$RHCOS_IMAGE_FILENAME_QCOW/$RHCOS_IMAGE_FILENAME_CACHED" $FFILENAME
     ln -sf "$RHCOS_IMAGE_FILENAME_QCOW/$RHCOS_IMAGE_FILENAME_CACHED.md5sum" "$FFILENAME.md5sum"
 fi
