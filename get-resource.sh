@@ -49,13 +49,16 @@ fi
 mkdir -p /shared/tmp
 WORK_DIR=$(mktemp -d -p /shared/tmp)
 
-# Export TMPDIR so that libguestfs tools (virt-filesystems, virt-ls, virt-edit)
-# use our writable directory instead of the default /tmp.
+# Export TMPDIR, LIBGUESTFS_TMPDIR and LIBGUESTFS_CACHEDIR so that libguestfs
+# tools (virt-filesystems, virt-ls, virt-edit) use our writable directory
+# instead of the default /tmp.
 export TMPDIR="${WORK_DIR}"
+export LIBGUESTFS_TMPDIR="${WORK_DIR}"
+export LIBGUESTFS_CACHEDIR="${WORK_DIR}"
 
-# Clean up on exit: unset TMPDIR to avoid referencing a deleted directory,
-# then remove the working directory.
-trap "unset TMPDIR; rm -fr ${WORK_DIR}" EXIT
+# Clean up on exit: unset the temp directory variables to avoid
+# referencing a deleted directory, then remove the working directory.
+trap "unset TMPDIR LIBGUESTFS_TMPDIR LIBGUESTFS_CACHEDIR; rm -fr ${WORK_DIR}" EXIT
 
 cd ${WORK_DIR}
 
@@ -95,12 +98,15 @@ else
     fi
 
     if [ -n "$IP_OPTIONS" ] ; then
-        BOOT_DISK=$(LIBGUESTFS_BACKEND=direct virt-filesystems -a "$RHCOS_IMAGE_FILENAME_QCOW" -l | grep boot | cut -f1 -d" ")
+        # Explicitly pass TMPDIR, LIBGUESTFS_TMPDIR and LIBGUESTFS_CACHEDIR inline
+        # to ensure libguestfs uses our writable directory, as exported variables
+        # may not be inherited properly in all container/subshell contexts.
+        BOOT_DISK=$(TMPDIR="${WORK_DIR}" LIBGUESTFS_TMPDIR="${WORK_DIR}" LIBGUESTFS_CACHEDIR="${WORK_DIR}" LIBGUESTFS_BACKEND=direct virt-filesystems -a "$RHCOS_IMAGE_FILENAME_QCOW" -l | grep boot | cut -f1 -d" ")
         # Iterate all available ostree boot configurations to support RHCOS/FCOS seamlessly
-        BOOT_ENTRIES=$(LIBGUESTFS_BACKEND=direct virt-ls -a "$RHCOS_IMAGE_FILENAME_QCOW" -m "$BOOT_DISK" /boot/loader/entries)
+        BOOT_ENTRIES=$(TMPDIR="${WORK_DIR}" LIBGUESTFS_TMPDIR="${WORK_DIR}" LIBGUESTFS_CACHEDIR="${WORK_DIR}" LIBGUESTFS_BACKEND=direct virt-ls -a "$RHCOS_IMAGE_FILENAME_QCOW" -m "$BOOT_DISK" /boot/loader/entries)
         for BOOT_ENTRY in $BOOT_ENTRIES; do
           if [[ $BOOT_ENTRY =~ ostree-1-.*.conf ]] ; then
-            LIBGUESTFS_BACKEND=direct virt-edit -a "$RHCOS_IMAGE_FILENAME_QCOW" -m "$BOOT_DISK" "/boot/loader/entries/$BOOT_ENTRY" -e "s/^options/options ${IP_OPTIONS}/"
+            TMPDIR="${WORK_DIR}" LIBGUESTFS_TMPDIR="${WORK_DIR}" LIBGUESTFS_CACHEDIR="${WORK_DIR}" LIBGUESTFS_BACKEND=direct virt-edit -a "$RHCOS_IMAGE_FILENAME_QCOW" -m "$BOOT_DISK" "/boot/loader/entries/$BOOT_ENTRY" -e "s/^options/options ${IP_OPTIONS}/"
           fi
         done
     fi
